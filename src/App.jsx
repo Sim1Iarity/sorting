@@ -447,6 +447,11 @@ const SortVisualizer = () => {
     
     setCurrentIndices(shuffled);
     
+    if (audSlices.length === 0 && audioBuffer) {
+      alert('音频切片创建失败');
+      return;
+    }
+    
     let result;
     if (sortAlgorithm === 'bubble') {
       result = bubbleSort(shuffled);
