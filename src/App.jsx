@@ -186,15 +186,24 @@ const SortVisualizer = () => {
   };
 
   const playAudioSlice = (audioSliceInfo) => {
-    if (!audioBuffer || !audioContextRef.current || !audioSliceInfo) return;
+    if (!audioBuffer || !audioContextRef.current || !audioSliceInfo) {
+      return;
+    }
     
     if (currentSourceRef.current) {
       try {
         currentSourceRef.current.stop();
-      } catch (e) {}
+      } catch (e) {
+        // 忽略停止错误
+      }
     }
     
     const ctx = audioContextRef.current;
+    // 确保音频上下文处于运行状态
+    if (ctx.state === 'suspended') {
+      ctx.resume();
+    }
+    
     const source = ctx.createBufferSource();
     source.buffer = audioBuffer;
     
@@ -205,10 +214,12 @@ const SortVisualizer = () => {
     source.connect(gainNode);
     gainNode.connect(ctx.destination);
     
-    const actualDuration = Math.min(audioSliceInfo.duration, audioBuffer.duration - audioSliceInfo.start);
+    const actualStart = Math.max(0, Math.min(audioSliceInfo.start, audioBuffer.duration - 0.01));
+    const maxDuration = audioBuffer.duration - actualStart;
+    const actualDuration = Math.min(audioSliceInfo.duration, maxDuration);
     
-    if (actualDuration > 0) {
-      source.start(ctx.currentTime, audioSliceInfo.start, actualDuration);
+    if (actualDuration > 0.01) {
+      source.start(ctx.currentTime, actualStart, actualDuration);
       currentSourceRef.current = source;
     }
   };
@@ -505,14 +516,14 @@ const SortVisualizer = () => {
   }, [isPlaying, sortStepsIndices, sortSpeed, audioBuffer, audioSlicesCache]);
 
   useEffect(() => {
-    if (sortStepsIndices.length > 0 && currentStep < sortStepsIndices.length) {
-      const currentStepIndices = sortStepsIndices[currentStep];
-      setCurrentIndices(currentStepIndices);
+    if (highlightedPositions.length > 0 && currentStep < highlightedPositions.length) {
+      const currentStepIndices = highlightedPositions[currentStep];
+      setCurrentIndices(sortStepsIndices[currentStep]);
       
       if (audioBuffer && audioPlaybackRef.current.isPlaying && audioSlicesCache.length > 0) {
         if (currentStep > 0) {
-          const prevStepIndices = sortStepsIndices[currentStep - 1];
-          let changedPosition = -1;
+          const prevStepIndices = highlightedPositions[currentStep - 1];
+          let changedPosition = 0;
           
           for (let i = 0; i < currentStepIndices.length; i++) {
             if (currentStepIndices[i] !== prevStepIndices[i]) {
@@ -530,7 +541,7 @@ const SortVisualizer = () => {
         }
       }
     }
-  }, [currentStep, sortStepsIndices, audioBuffer, audioSlicesCache]);
+  }, [currentStep, sortStepsIndices, highlightedPositions, audioBuffer, audioSlicesCache]);
 
   const renderSlices = () => {
     if (currentIndices.length === 0 || imageSlicesCache.length === 0) return null;
