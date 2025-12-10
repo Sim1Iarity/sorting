@@ -292,6 +292,61 @@ const SortVisualizer = () => {
     return { steps, highlights };
   };
 
+  const radixSort = (indices) => {
+    const steps = [];
+    const highlights = [];
+    const arr = [...indices];
+
+    steps.push([...arr]);
+    highlights.push([]);
+
+    const getMax = (arr) => Math.max(...arr);
+
+    // 计数排序按 digit 位处理
+    const countingSort = (exp) => {
+      const n = arr.length;
+      const output = new Array(n).fill(0);
+      const count = new Array(10).fill(0);
+
+      // 统计某个位上的数字出现次数
+      for (let i = 0; i < n; i++) {
+        const digit = Math.floor(arr[i] / exp) % 10;
+        count[digit]++;
+      }
+
+      // 前缀和
+      for (let i = 1; i < 10; i++) {
+        count[i] += count[i - 1];
+      }
+
+      // 从右到左构建 output 数组（稳定性）
+      for (let i = n - 1; i >= 0; i--) {
+        const digit = Math.floor(arr[i] / exp) % 10;
+        output[--count[digit]] = arr[i];
+      }
+
+      // 写回 arr，并记录变化
+      for (let i = 0; i < n; i++) {
+        const prev = arr[i];
+        arr[i] = output[i];
+
+        if (arr[i] !== prev) {
+          steps.push([...arr]);
+          highlights.push([i]); // 只标记位置变化
+        }
+      }
+    };
+
+    const maxVal = getMax(arr);
+
+    // 对每一位进行计数排序
+    for (let exp = 1; Math.floor(maxVal / exp) > 0; exp *= 10) {
+      countingSort(exp);
+    }
+
+    return { steps, highlights };
+  };
+
   const mergeSort = (indices) => {
     const steps = [];
     const highlights = [];
@@ -470,6 +525,8 @@ const SortVisualizer = () => {
       result = quickSort(shuffled);
     } else if (sortAlgorithm === 'merge') {
       result = mergeSort(shuffled);
+    } else if (sortAlgorithm === 'radix') {
+      result = radixSort(shuffled);
     } else if (sortAlgorithm === 'insertion') {
       result = insertionSort(shuffled);
     } else {
@@ -523,7 +580,7 @@ const SortVisualizer = () => {
       if (audioBuffer && audioPlaybackRef.current.isPlaying && audioSlicesCache.length > 0) {
         if (currentStep > 0) {
           const prevStepIndices = highlightedPositions[currentStep - 1];
-          let changedPosition = 0;
+          let changedPosition = -1;
           
           for (let i = 0; i < currentStepIndices.length; i++) {
             if (currentStepIndices[i] !== prevStepIndices[i]) {
@@ -743,6 +800,7 @@ const SortVisualizer = () => {
               <option value="quick">快速排序</option>
               <option value="merge">归并排序</option>
               <option value="insertion">插入排序</option>
+              <option value="radix">基数排序</option>
               <option value="custom">自定义算法</option>
             </select>
           </div>
