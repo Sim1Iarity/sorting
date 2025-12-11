@@ -1268,27 +1268,28 @@ const SortVisualizer = () => {
 
   useEffect(() => {
     if (highlightedPositions.length > 0 && currentStep < highlightedPositions.length) {
-      const currentStepIndices = highlightedPositions[currentStep];
-      setCurrentIndices(sortStepsIndices[currentStep]);
+      const currentStepIndices = sortStepsIndices[currentStep];
+      setCurrentIndices(currentStepIndices);
       
       if (audioBuffer && audioPlaybackRef.current.isPlaying && audioSlicesCache.length > 0) {
         if (currentStep > 0) {
-          const prevStepIndices = highlightedPositions[currentStep - 1];
+          const currentHighlightPositions = highlightedPositions[currentStep];
+          
           let changedPosition = -1;
           
-          for (let i = 0; i < currentStepIndices.length; i++) {
-            if (currentStepIndices[i] !== prevStepIndices[i]) {
-              changedPosition = i;
-              break;
-            }
+          if (changedPosition === -1 && currentHighlightPositions.length > 0) {
+            changedPosition = currentHighlightPositions[0];
           }
           
           if (changedPosition >= 0) {
-            const audioSlice = audioSlicesCache[currentStepIndices[changedPosition]];
+            const sliceIndex = currentStepIndices[changedPosition];
+            const audioSlice = audioSlicesCache[sliceIndex];
             playAudioSlice(audioSlice);
           }
         } else if (audioSlicesCache.length > 0) {
-          playAudioSlice(audioSlicesCache[currentStepIndices[0]]);
+          const sliceIndex = currentStepIndices[0] || 0;
+          const audioSlice = audioSlicesCache[sliceIndex];
+          playAudioSlice(audioSlice);
         }
       }
     }
