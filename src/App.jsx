@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Upload, Play, Pause, RotateCw, Scissors, Globe } from 'lucide-react';
+import AnimationModal from './AnimationModal';
 
 // 多语言文本配置
 const translations = {
@@ -146,11 +147,13 @@ const SortVisualizer = () => {
   const [sortAlgorithm, setSortAlgorithm] = useState('bubble');
   const [customAlgorithm, setCustomAlgorithm] = useState('');
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isAniModalClose, setIsAniModalClose] = useState(true);
   const [sortSpeed, setSortSpeed] = useState(50);
   
   const [imageSlicesCache, setImageSlicesCache] = useState([]);
   const [audioSlicesCache, setAudioSlicesCache] = useState([]);
   const [currentIndices, setCurrentIndices] = useState([]);
+  const [curResult, setCurResult] = useState([]);
   const [sortStepsIndices, setSortStepsIndices] = useState([]);
   const [currentStep, setCurrentStep] = useState(0);
   const [isSorted, setIsSorted] = useState(false);
@@ -1159,6 +1162,11 @@ const SortVisualizer = () => {
     }
   };
 
+  const showAniModal = () => {
+    setIsAniModalClose(false);
+  }
+
+
   const startSort = () => {
     if (!isImageLoaded) {
       alert(t.alerts.uploadImageFirst);
@@ -1227,12 +1235,11 @@ const SortVisualizer = () => {
       result = executeCustomAlgorithm(shuffled);
     }
     
+    setCurResult(result);
     setSortStepsIndices(result.steps);
     setHighlightedPositions(result.highlights || []);
     setCurrentStep(0);
     setIsSorted(false);
-    setIsPlaying(true);
-    audioPlaybackRef.current.isPlaying = true;
   };
 
   useEffect(() => {
@@ -1354,6 +1361,56 @@ const SortVisualizer = () => {
     );
   };
 
+  const handlePlay = () => {
+    if (isSorted) {
+      // Reset to initial state to start over
+      setCurrentStep(0);
+      setIsSorted(false);
+      setSortStepsIndices(curResult.steps);
+      setHighlightedPositions(curResult.highlights || []);
+      setCurrentIndices(sortStepsIndices[0] || []);
+    }
+    setIsPlaying(true);
+    audioPlaybackRef.current.isPlaying = true;
+  };
+
+  const handlePause = () => {
+    setIsPlaying(false);
+    audioPlaybackRef.current.isPlaying = false;
+  };
+
+  const handleReset = () => {
+    if (currentSourceRef.current) {
+      try {
+        currentSourceRef.current.stop();
+      } catch (e) {}
+    }
+    stopFinalAudio();
+    setCurrentIndices([]);
+    setSortStepsIndices([]);
+    setHighlightedPositions([]);
+    setCurrentStep(0);
+    setIsPlaying(false);
+    setIsSorted(false);
+    audioPlaybackRef.current.isPlaying = false;
+  };
+
+  const handleAniModalClose = () => {
+    setIsAniModalClose(true);
+    handleReset();
+  };
+
+  const handleStop = () => {
+    if (currentSourceRef.current) {
+      try {
+        currentSourceRef.current.stop();
+      } catch (e) {}
+    }
+    stopFinalAudio();
+    setIsPlaying(false);
+    audioPlaybackRef.current.isPlaying = false;
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-8">
       <div className="max-w-7xl mx-auto bg-white rounded-xl shadow-2xl p-8">
@@ -1369,8 +1426,8 @@ const SortVisualizer = () => {
           {/* 语言切换 */}
           <div className="flex items-center space-x-2">
             <Globe className="w-5 h-5 text-gray-500" />
-            <select 
-              value={language} 
+            <select
+              value={language}
               onChange={(e) => setLanguage(e.target.value)}
               className="border border-gray-300 rounded px-3 py-1 text-sm focus:ring-2 focus:ring-blue-500"
             >
@@ -1442,9 +1499,9 @@ const SortVisualizer = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div>
                 <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-                  <input 
-                    type="checkbox" 
-                    checked={showHighlight} 
+                  <input
+                    type="checkbox"
+                    checked={showHighlight}
                     onChange={(e) => setShowHighlight(e.target.checked)}
                     className="w-4 h-4 text-blue-600 rounded"
                   />
@@ -1453,9 +1510,9 @@ const SortVisualizer = () => {
                 {showHighlight && (
                   <div className="ml-6">
                     <label className="block text-xs text-gray-600 mb-1">{t.highlightColor}</label>
-                    <input 
-                      type="color" 
-                      value={highlightColor} 
+                    <input
+                      type="color"
+                      value={highlightColor}
                       onChange={(e) => setHighlightColor(e.target.value)}
                       className="w-full h-8 rounded cursor-pointer"
                     />
@@ -1465,9 +1522,9 @@ const SortVisualizer = () => {
               
               <div>
                 <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-                  <input 
-                    type="checkbox" 
-                    checked={showBorder} 
+                  <input
+                    type="checkbox"
+                    checked={showBorder}
                     onChange={(e) => setShowBorder(e.target.checked)}
                     className="w-4 h-4 text-blue-600 rounded"
                   />
@@ -1477,20 +1534,20 @@ const SortVisualizer = () => {
                   <div className="ml-6 space-y-2">
                     <div>
                       <label className="block text-xs text-gray-600 mb-1">{t.borderColor}</label>
-                      <input 
-                        type="color" 
-                        value={borderColor} 
+                      <input
+                        type="color"
+                        value={borderColor}
                         onChange={(e) => setBorderColor(e.target.value)}
                         className="w-full h-8 rounded cursor-pointer"
                       />
                     </div>
                     <div>
                       <label className="block text-xs text-gray-600 mb-1">{t.borderWidth}: {borderWidth}px</label>
-                      <input 
-                        type="range" 
-                        min="1" 
-                        max="10" 
-                        value={borderWidth} 
+                      <input
+                        type="range"
+                        min="1"
+                        max="10"
+                        value={borderWidth}
                         onChange={(e) => setBorderWidth(Number(e.target.value))}
                         className="w-full"
                       />
@@ -1501,11 +1558,11 @@ const SortVisualizer = () => {
               
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">{t.animationScale}: {animationScale}%</label>
-                <input 
-                  type="range" 
-                  min="25" 
-                  max="200" 
-                  value={animationScale} 
+                <input
+                  type="range"
+                  min="25"
+                  max="200"
+                  value={animationScale}
                   onChange={(e) => setAnimationScale(Number(e.target.value))}
                   className="w-full"
                 />
@@ -1526,18 +1583,18 @@ const SortVisualizer = () => {
           {sortAlgorithm === 'custom' && (
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">{t.customAlgorithm}</label>
-              <textarea 
-                value={customAlgorithm} 
-                onChange={(e) => setCustomAlgorithm(e.target.value)} 
+              <textarea
+                value={customAlgorithm}
+                onChange={(e) => setCustomAlgorithm(e.target.value)}
                 placeholder={t.customAlgorithmPlaceholder}
-                className="w-full p-3 border border-gray-300 rounded font-mono text-sm h-32 focus:ring-2 focus:ring-blue-500" 
+                className="w-full p-3 border border-gray-300 rounded font-mono text-sm h-32 focus:ring-2 focus:ring-blue-500"
               />
             </div>
           )}
         </div>
         
         <div className="flex justify-center gap-4 mb-8 flex-wrap">
-          <button onClick={startSort} disabled={!image || isPlaying} className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold shadow-lg transition">
+          <button onClick={showAniModal} disabled={!image || isPlaying} className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold shadow-lg transition">
             <Play className="w-5 h-5" />
             {t.startSort}
           </button>
@@ -1552,14 +1609,28 @@ const SortVisualizer = () => {
             {isPlayingFinalAudio ? (language === 'zh' ? '播放中...' : 'Playing...') : t.playFullAudio}
           </button>
           
-          <button onClick={() => { if (currentSourceRef.current) { try { currentSourceRef.current.stop(); } catch (e) {} } stopFinalAudio(); setCurrentIndices([]); setSortStepsIndices([]); setHighlightedPositions([]); setCurrentStep(0); setIsPlaying(false); setIsSorted(false); audioPlaybackRef.current.isPlaying = false; }} className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-lg hover:from-gray-600 hover:to-gray-700 font-semibold shadow-lg transition">
+          <button onClick={handleReset} className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-lg hover:from-gray-600 hover:to-gray-700 font-semibold shadow-lg transition">
             <RotateCw className="w-5 h-5" />
             {t.reset}
           </button>
         </div>
         
-        {sortStepsIndices.length > 0 && (
-          <div className="mb-6">
+      </div>
+      
+      {/* 全屏动画浮窗 */}
+      <AnimationModal
+        isOpen={!isAniModalClose}
+        onClose={handleAniModalClose}
+        algorithmName={t.algorithmOptions[sortAlgorithm]}
+        isPlaying={isPlaying}
+        onStart={startSort}
+        onPause={handlePause}
+        onResume={handlePlay}
+        onReset={handleReset}
+        onStop={handleStop}
+      >
+          {sortStepsIndices.length > 0 && (
+          <div className="mb-6  w-full">
             <div className="flex justify-between text-sm text-gray-600 mb-2">
               <span>{t.step}: {currentStep + 1} {t.of} {sortStepsIndices.length}</span>
               <span className={isSorted ? 'text-green-600 font-bold' : ''}>
@@ -1571,21 +1642,10 @@ const SortVisualizer = () => {
             </div>
           </div>
         )}
-        
-        <div ref={containerRef} className="bg-gray-100 rounded-lg p-6 flex justify-center items-center min-h-[400px]">
-          {currentIndices.length > 0 ? (
-            <div className="max-w-full max-h-[600px] overflow-auto">
-              {renderSlices()}
-            </div>
-          ) : (
-            <div className="text-center text-gray-400 py-20">
-              <Scissors className="w-16 h-16 mx-auto mb-4 opacity-50" />
-              <p className="text-lg">{t.uploadInstructions}</p>
-              <p className="text-sm mt-2">{t.uploadDetails}</p>
-            </div>
-          )}
+        <div className="w-full h-full flex items-center justify-center">
+          {renderSlices()}
         </div>
-      </div>
+      </AnimationModal>
     </div>
   );
 };
