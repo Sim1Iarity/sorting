@@ -503,56 +503,46 @@ const SortVisualizer = () => {
     highlights.push([]);
 
     const merge = (l, m, r) => {
-        const leftArr = arr.slice(l, m);
+      const leftArr = arr.slice(l, m);
+      const rightArr = arr.slice(m, r);
 
-        let i = 0, j = m, k = l;
+      let i = 0;
+      let j = 0;
+      let k = l;
 
-        while (i < leftArr.length && j < r) {
-            if (leftArr[i] <= rightArr[j]) {
-                arr[k] = leftArr[i];
-                i++;
-            } else {
-                arr[k] = arr[j];
-                j++;
-            }
-            steps.push([...arr]);
-            highlights.push([k]);
-            k++;
+      while (i < leftArr.length && j < rightArr.length) {
+        if (leftArr[i] <= rightArr[j]) {
+          arr[k] = leftArr[i++];
+        } else {
+          arr[k] = rightArr[j++];
         }
+        steps.push([...arr]);
+        highlights.push([k]);
+        k++;
+      }
 
-        while (i < leftArr.length) {
-            arr[k] = leftArr[i];
-            steps.push([...arr]);
-            highlights.push([k]);
-            i++;
-            k++;
-        }
+      while (i < leftArr.length) {
+        arr[k] = leftArr[i++];
+        steps.push([...arr]);
+        highlights.push([k]);
+        k++;
+      }
 
-        while (j < r && j > k) {
-            arr[k] = arr[j];
-            steps.push([...arr]);
-            highlights.push([k]);
-            j++;
-            k++;
-        }
+      while (j < rightArr.length) {
+        arr[k] = rightArr[j++];
+        steps.push([...arr]);
+        highlights.push([k]);
+        k++;
+      }
     };
 
     const sort = (left, right) => {
-      if (right - left == 1) return;
-      else if (right - left == 2) {
-        if (arr[left] > arr[left + 1]) {
-          [arr[left], arr[left + 1]] = [arr[left + 1], arr[left]];
-          steps.push([...arr]);
-          highlights.push([left, left + 1]);
-        }
-        return;
-      }
-      else {
-        const mid = Math.floor((left + right) / 2);
-        sort(left, mid);
-        sort(mid, right);
-        merge(left, mid, right);
-      }
+      if (right - left <= 1) return;
+
+      const mid = Math.floor((left + right) / 2);
+      sort(left, mid);
+      sort(mid, right);
+      merge(left, mid, right);
     };
 
     sort(0, arr.length);
@@ -563,15 +553,20 @@ const SortVisualizer = () => {
     const steps = [];
     const highlights = [];
     const arr = [...indices];
+
     steps.push([...arr]);
     highlights.push([]);
-    
+
     const partition = (low, high) => {
       const pivot = arr[high];
       let i = low - 1;
-      
+
       for (let j = low; j < high; j++) {
-        if (arr[j] < pivot) {
+        // 记录比较（即使不交换）
+        steps.push([...arr]);
+        highlights.push([j, high]);
+
+        if (arr[j] <= pivot) {
           i++;
           if (i !== j) {
             [arr[i], arr[j]] = [arr[j], arr[i]];
@@ -580,23 +575,30 @@ const SortVisualizer = () => {
           }
         }
       }
+
+      // pivot 归位
       if (i + 1 !== high) {
         [arr[i + 1], arr[high]] = [arr[high], arr[i + 1]];
         steps.push([...arr]);
         highlights.push([i + 1, high]);
       }
+
       return i + 1;
     };
-    
+
     const sort = (low, high) => {
-      if (low < high) {
-        const pi = partition(low, high);
-        sort(low, pi - 1);
-        sort(pi + 1, high);
-      }
+      if (low >= high) return;
+      const pi = partition(low, high);
+      sort(low, pi - 1);
+      sort(pi + 1, high);
     };
-    
+
     sort(0, arr.length - 1);
+
+    // 最终状态兜底
+    steps.push([...arr]);
+    highlights.push([]);
+
     return { steps, highlights };
   };
 
