@@ -291,12 +291,12 @@ const SortVisualizer = () => {
     if (sliceDirection === 'vertical') {
       const displaySliceWidth = displayWidth / sliceCount;
       canvas.height = cropH;
+      const sliceWidth = cropW / sliceCount;
+      canvas.width = sliceWidth;
       
       for (let i = 0; i < sliceCount; i++) {
-        const thisSliceWidth = Math.floor((i + 1) * cropW / sliceCount) - Math.floor(i * cropW / sliceCount);
-        canvas.width = thisSliceWidth;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, cropX + Math.floor(i * cropW / sliceCount), cropY, thisSliceWidth, cropH, 0, 0, thisSliceWidth, cropH);
+        ctx.drawImage(img, cropX + Math.floor(i * cropW / sliceCount), cropY, sliceWidth, cropH, 0, 0, sliceWidth, cropH);
         sliceArray.push({
           dataUrl: canvas.toDataURL('image/png'),
           displayWidth: displaySliceWidth,
@@ -306,12 +306,12 @@ const SortVisualizer = () => {
     } else {
       const displaySliceHeight = displayHeight / sliceCount;
       canvas.width = cropW;
+      const sliceHeight = cropH / sliceCount;
+      canvas.height = sliceHeight;
       
       for (let i = 0; i < sliceCount; i++) {
-        const thisSliceHeight = Math.floor((i + 1) * cropH / sliceCount) - Math.floor(i * cropH / sliceCount);
-        canvas.height = thisSliceHeight;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, cropX, cropY + Math.floor(i * cropH / sliceCount), cropW, thisSliceHeight, 0, 0, cropW, thisSliceHeight);
+        ctx.drawImage(img, cropX, cropY + Math.floor(i * cropH / sliceCount), cropW, sliceHeight, 0, 0, cropW, sliceHeight);
         sliceArray.push({
           dataUrl: canvas.toDataURL('image/png'),
           displayWidth: displayWidth,
