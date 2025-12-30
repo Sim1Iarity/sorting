@@ -621,8 +621,8 @@ const SortVisualizer = () => {
       let i = low;
       let j = high;
       while (true) {
-        while (i <= j && arr[i] <= pivot) { i = i + 1; }
-        while (i <= j && arr[j] >= pivot) { j = j - 1; }
+        while (i <= j && arr[i] < pivot) { i = i + 1; }
+        while (i <= j && arr[j] > pivot) { j = j - 1; }
         if (i > j) { return j; }
         [arr[i], arr[j]] = [arr[j], arr[i]];
         steps.push([...arr]);
@@ -637,7 +637,7 @@ const SortVisualizer = () => {
     const sort = (low, high) => {
       if (low < high) {
         const pi = partition(low, high);
-        sort(low, pi - 1);
+        sort(low, pi);
         sort(pi + 1, high);
       }
     };
@@ -724,8 +724,8 @@ const SortVisualizer = () => {
         let j = high - 1;
         const pivot = arr[p];
         while (i <= j) {
-            while (arr[i] <= pivot) { i++; }
-            while (arr[j] >= pivot) { j--; }
+            while (i <= j && arr[i] < pivot) { i++; }
+            while (i <= j && arr[j] > pivot) { j--; }
             if (i <= j) {
                 [arr[i], arr[j]] = [arr[j], arr[i]];
                 steps.push([...arr]);
@@ -758,17 +758,17 @@ const SortVisualizer = () => {
         }
     };
 
-    const detectRun = (start) => {
+    const detectRun = (start, arrayEnd) => {
         if (arr[start] <= arr[start + 1]) {
             let end = start + 1;
-            while (end + 1 < n && arr[end] <= arr[end + 1]) {
+            while (end < arrayEnd && arr[end] <= arr[end + 1]) {
                 end++;
             }
             return end;
         }
         else {
             let end = start + 1;
-            while (end + 1 < n && arr[end] >= arr[end + 1]) {
+            while (end < arrayEnd && arr[end] >= arr[end + 1]) {
                 end++;
             }
             for (let i = start, j = end; i < j; i++, j--) {
@@ -785,8 +785,8 @@ const SortVisualizer = () => {
             insertionSort(low, high - 1);
             return;
         }
-        const runEnd = detectRun(low);
-        if (runEnd == high - 1) return;
+        const runEnd = detectRun(low, high - 1);
+        if (runEnd >= high - 1) return;
         if (runEnd >= low + (high - low) / 4) {
             sort(runEnd + 1, high, badAllowed);
             merge(low, runEnd + 1, high);
